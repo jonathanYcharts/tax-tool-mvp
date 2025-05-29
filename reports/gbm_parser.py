@@ -13,24 +13,21 @@ def parse_gbm_confirmation_text(text: str):
 
     for i, line in enumerate(lines):
         line = line.strip()
+        parts = line.split()
 
-        if re.search(r'\s+M\s+(Buy|Sell)\s+', line):
+        # Look for 'Buy' or 'Sell' in the parts
+        if "Buy" in parts or "Sell" in parts:
             try:
-                line = re.sub(r'\s+M\s+(Buy|Sell)', r' \1', line)
-                parts = line.split()
+                action_index = parts.index("Buy") if "Buy" in parts else parts.index("Sell")
                 symbol = parts[0]
-
-                # Last fields (always in same order):
-                capacity = parts[-1]
-                settle_date = parse_date(parts[-2])
-                trade_date = parse_date(parts[-3])
-                price = float(parts[-4])
-                quantity = float(parts[-5])
-                execution_time = parts[-7] + " " + parts[-6]  # ← fix: combine HH:MM:SS + AM/PM
-                action = parts[-8]
-
-                # The rest is the security name (everything between symbol and action)
-                security_name = " ".join(parts[1:-8])
+                action = parts[action_index]
+                execution_time = parts[action_index + 1] + " " + parts[action_index + 2]
+                quantity = float(parts[action_index + 3])
+                price = float(parts[action_index + 4])
+                trade_date = parse_date(parts[action_index + 5])
+                settle_date = parse_date(parts[action_index + 6])
+                capacity = " ".join(parts[action_index + 7:])  # e.g. 'Principal' or 'Riskless Principal'
+                security_name = " ".join(parts[1:action_index])  # everything between symbol and action
 
                 current = {
                     'symbol': symbol,
