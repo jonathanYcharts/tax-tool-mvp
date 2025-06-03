@@ -18,6 +18,14 @@ class GBMConfirmationTransaction(models.Model):
     net_amount = models.FloatField()
     upload_date = models.DateField(auto_now_add=True)
     mxn_amount = models.FloatField(null=True, blank=True)
+    # Only for "Sell" action instances
+    capital_gain_mxn = models.FloatField(null=True, blank=True)
 
     def __str__(self):
         return f"{self.symbol} {self.action} {self.quantity} @ {self.price}"
+
+
+class ExchangeRate(models.Model):
+    date = models.DateField(unique=True)
+    rate = models.FloatField()
+    last_updated = models.DateTimeField(auto_now=True)

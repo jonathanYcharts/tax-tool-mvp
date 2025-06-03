@@ -17,10 +17,11 @@ Including another URLconf
 
 from django.contrib import admin
 from django.urls import path
-from reports.views import upload_pdf, tax_summary_view
+from reports.views import upload_pdf, tax_summary_view, tax_dashboard_view
 
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("upload/", upload_pdf),
     path('tax-summary/', tax_summary_view),
+    path("tax_dashboard/", tax_dashboard_view, name="tax_dashboard"),
 ]

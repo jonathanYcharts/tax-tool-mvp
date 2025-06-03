@@ -26,8 +26,9 @@ def parse_gbm_confirmation_text(text: str):
                 price = float(parts[action_index + 4])
                 trade_date = parse_date(parts[action_index + 5])
                 settle_date = parse_date(parts[action_index + 6])
-                capacity = " ".join(parts[action_index + 7:])  # e.g. 'Principal' or 'Riskless Principal'
-                security_name = " ".join(parts[1:action_index])  # everything between symbol and action
+                capacity = " ".join(parts[action_index + 7:]) # e.g. 'Principal' or 'Riskless Principal'
+                raw_security_name = " ".join(parts[1:action_index]) # everything between symbol and action
+                security_name = re.sub(r'\s+[A-Z]$', '', raw_security_name.strip())
 
                 current = {
                     'symbol': symbol,

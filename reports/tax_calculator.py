@@ -1,13 +1,18 @@
-from .models import GBMConfirmationTransaction
+from .models import GBMConfirmationTransaction, ExchangeRate
 from collections import defaultdict
 from datetime import datetime
-import requests
+from .utils import get_usd_to_mxn_rate
 
-BANXICO_API_URL = "https://www.banxico.org.mx/SieAPIRest/service/v1/series/SF43718/datos"  # Fix later with token
 
-def get_usd_to_mxn_rate(date: datetime.date) -> float:
-    # Simulated fallback (you'll replace this with real Banxico API or your own cache)
-    return 19.3  # Placeholder, we'll plug real API after
+def get_usd_to_mxn_rate_cached(date: datetime.date) -> float:
+    try:
+        rate_obj = ExchangeRate.objects.get(date=date)
+        return rate_obj.rate
+    except ExchangeRate.DoesNotExist:
+        rate = get_usd_to_mxn_rate(date)
+        if rate is not None:
+            ExchangeRate.objects.create(date=date, rate=rate)
+        return rate
 
 def calculate_capital_gains(year: int):
     buys_by_symbol = defaultdict(list)
@@ -25,35 +30,45 @@ def calculate_capital_gains(year: int):
 
     for symbol, sales in sales_by_symbol.items():
         buys = buys_by_symbol[symbol]
-        buy_index = 0
+
+        # Build shadow copy of buy lots: (buy_tx, remaining_qty)
+        buy_lots = [(tx, tx.quantity) for tx in buys]
 
         for sale in sales:
             remaining_qty = sale.quantity
-            sale_fx = get_usd_to_mxn_rate(sale.trade_date)
+            sale_fx = get_usd_to_mxn_rate_cached(sale.trade_date)
             sale_mxn = sale.net_amount * sale_fx
 
             gain_mxn = 0.0
 
-            while remaining_qty > 0 and buy_index < len(buys):
-                buy = buys[buy_index]
-                if buy.quantity == 0:
-                    buy_index += 1
+            for i in range(len(buy_lots)):
+                buy, available_qty = buy_lots[i]
+
+                if available_qty == 0:
                     continue
 
-                used_qty = min(remaining_qty, buy.quantity)
-                buy_fx = get_usd_to_mxn_rate(buy.trade_date)
-                buy_mxn = (buy.net_amount / buy.quantity) * used_qty * buy_fx
+                used_qty = min(remaining_qty, available_qty)
+                buy_fx = get_usd_to_mxn_rate_cached(buy.trade_date)
+                buy_unit_cost_mxn = (buy.net_amount / buy.quantity) * buy_fx
+                buy_mxn = used_qty * buy_unit_cost_mxn
 
-                gain_mxn += sale_mxn * (used_qty / sale.quantity) - buy_mxn
+                portion_of_sale_mxn = sale_mxn * (used_qty / sale.quantity)
+                gain_mxn += portion_of_sale_mxn - buy_mxn
 
-                # update quantities
+                # Update remaining qty in memory (not DB)
+                buy_lots[i] = (buy, available_qty - used_qty)
                 remaining_qty -= used_qty
-                buy.quantity -= used_qty
+
+                if remaining_qty <= 0:
+                    break
+
+            sale.capital_gain_mxn = round(gain_mxn, 2)
+            sale.save()
 
             gains.append({
                 "symbol": symbol,
                 "trade_date": sale.trade_date,
-                "gain_mxn": round(gain_mxn, 2),
+                "gain_mxn": sale.capital_gain_mxn,
                 "quantity": sale.quantity,
                 "net_mxn": round(sale_mxn, 2)
             })

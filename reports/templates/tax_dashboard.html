@@ -1,0 +1,21 @@
+<h1>GBM Transaction Dashboard</h1>
+
+{% for year, actions in grouped_transactions.items %}
+  <h2>{{ year }}</h2>
+
+  <h3>Buys</h3>
+  <ul>
+    {% for tx in actions.Buy %}
+      <li>{{ tx.trade_date }} - {{ tx.symbol }} - Bought {{ tx.quantity }} Shares for {{ tx.net_amount }} USD ({{ tx.mxn_amount }} MXN)</li>
+    {% endfor %}
+  </ul>
+
+  <h3>Sells</h3>
+  <ul>
+    {% for tx in actions.Sell %}
+      <li>{{ tx.trade_date }} - {{ tx.symbol }} - Sold {{ tx.quantity }} Shares for {{ tx.net_amount }} USD ({{ tx.mxn_amount }} MXN)
+        {% if tx.capital_gain_mxn %} — Gain: {{ tx.capital_gain_mxn }} MXN {% endif %}
+      </li>
+    {% endfor %}
+  </ul>
+{% endfor %}
