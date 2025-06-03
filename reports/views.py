@@ -84,15 +84,23 @@ def tax_summary_view(request):
     return JsonResponse({"year": year, "capital_gains": results})
 
 def tax_dashboard_view(request):
+    selected_year = request.GET.get("year")
+
     transactions = GBMConfirmationTransaction.objects.all().order_by("-trade_date")
+    if selected_year:
+        transactions = transactions.filter(trade_date__year=selected_year)
 
     grouped = defaultdict(lambda: {"Buy": [], "Sell": []})
-
     for tx in transactions:
         year = tx.trade_date.year if tx.trade_date else "Unknown"
         grouped[year][tx.action].append(tx)
 
+    all_years = sorted({tx.trade_date.year for tx in GBMConfirmationTransaction.objects.all()})
+
     context = {
-        "grouped_transactions": dict(grouped)
+        "grouped_transactions": dict(grouped),
+        "selected_year": int(selected_year) if selected_year else None,
+        "all_years": all_years,
     }
+
     return render(request, "tax_dashboard.html", context)

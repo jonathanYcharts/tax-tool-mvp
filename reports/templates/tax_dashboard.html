@@ -1,4 +1,15 @@
+{% load sum_filters %}
+
 <h1>GBM Transaction Dashboard</h1>
+
+<form method="get" action="{% url 'tax_dashboard' %}">
+  <label for="year">Year:</label>
+  <select name="year" onchange="this.form.submit()">
+  {% for year in all_years %}
+    <option value="{{ year }}" {% if year == selected_year %}selected{% endif %}>{{ year }}</option>
+  {% endfor %}
+  </select>
+</form>
 
 {% for year, actions in grouped_transactions.items %}
   <h2>{{ year }}</h2>
@@ -9,13 +20,24 @@
       <li>{{ tx.trade_date }} - {{ tx.symbol }} - Bought {{ tx.quantity }} Shares for {{ tx.net_amount }} USD ({{ tx.mxn_amount }} MXN)</li>
     {% endfor %}
   </ul>
+  <p><strong>Total Bought: {{ actions.Buy|length }} transactions</strong></p>
+  <p><strong>Total Invested: {{ actions.Buy|sum_mxn }} MXN</strong></p>
 
   <h3>Sells</h3>
   <ul>
     {% for tx in actions.Sell %}
-      <li>{{ tx.trade_date }} - {{ tx.symbol }} - Sold {{ tx.quantity }} Shares for {{ tx.net_amount }} USD ({{ tx.mxn_amount }} MXN)
-        {% if tx.capital_gain_mxn %} — Gain: {{ tx.capital_gain_mxn }} MXN {% endif %}
+      <li>
+        {{ tx.trade_date|date:"b. d, Y" }} -
+        {{ tx.symbol }} -
+        Sold {{ tx.quantity }} Shares for {{ tx.net_amount }} USD ({{ tx.mxn_amount }} MXN)
+        {% if tx.capital_gain_mxn is not None %}
+          — <strong>Gain: {{ tx.capital_gain_mxn }} MXN</strong>
+        {% else %}
+          — <em>Gain not calculated</em>
+        {% endif %}
       </li>
     {% endfor %}
   </ul>
+  <p><strong>Total Sold: {{ actions.Sell|length }} transactions</strong></p>
+  <p><strong>Total Capital Gains: {{ actions.Sell|sum_gain }} MXN</strong></p>
 {% endfor %}
