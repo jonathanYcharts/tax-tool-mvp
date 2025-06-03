@@ -18,4 +18,5 @@ venv/
 
 # Editors/IDEs
 .vscode/
+.idea/
 *.log
