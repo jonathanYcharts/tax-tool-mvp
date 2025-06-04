@@ -84,11 +84,23 @@ def tax_summary_view(request):
     return JsonResponse({"year": year, "capital_gains": results})
 
 def tax_dashboard_view(request):
-    selected_year = request.GET.get("year")
+    selected_year = int(request.GET.get("year", datetime.now().year))
 
-    transactions = GBMConfirmationTransaction.objects.all().order_by("-trade_date")
+    # Calculate and set capital gains for sell instances before fetching
+    if not GBMConfirmationTransaction.objects.filter(
+        trade_date__year=selected_year,
+        action="Sell",
+        capital_gain_mxn__isnull=False,
+    ).exists():
+        print('Calculating capital gains!!! because we faound null values jiji')
+        calculate_capital_gains(selected_year)
+
     if selected_year:
-        transactions = transactions.filter(trade_date__year=selected_year)
+        transactions = GBMConfirmationTransaction.objects.filter(
+            trade_date__year=selected_year
+        ).order_by("-trade_date")
+    else:
+        transactions = GBMConfirmationTransaction.objects.all().order_by("-trade_date")
 
     grouped = defaultdict(lambda: {"Buy": [], "Sell": []})
     for tx in transactions:

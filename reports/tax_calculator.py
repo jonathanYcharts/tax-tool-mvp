@@ -35,7 +35,7 @@ def calculate_capital_gains(year: int):
         buy_lots = [(tx, tx.quantity) for tx in buys]
 
         for sale in sales:
-            remaining_qty = sale.quantity
+            remaining_qty = abs(sale.quantity)
             sale_fx = get_usd_to_mxn_rate_cached(sale.trade_date)
             sale_mxn = sale.net_amount * sale_fx
 
@@ -52,7 +52,7 @@ def calculate_capital_gains(year: int):
                 buy_unit_cost_mxn = (buy.net_amount / buy.quantity) * buy_fx
                 buy_mxn = used_qty * buy_unit_cost_mxn
 
-                portion_of_sale_mxn = sale_mxn * (used_qty / sale.quantity)
+                portion_of_sale_mxn = sale_mxn * (used_qty / abs(sale.quantity))
                 gain_mxn += portion_of_sale_mxn - buy_mxn
 
                 # Update remaining qty in memory (not DB)

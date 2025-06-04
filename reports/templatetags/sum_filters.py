@@ -9,3 +9,7 @@ def sum_mxn(queryset):
 @register.filter
 def sum_gain(transactions):
     return round(sum(tx.capital_gain_mxn or 0 for tx in transactions), 2)
+
+@register.filter
+def sum_sold(transactions):
+    return round(sum(tx.mxn_amount or 0 for tx in transactions if tx.action == "Sell"), 2)

@@ -31,13 +31,20 @@
         {{ tx.symbol }} -
         Sold {{ tx.quantity }} Shares for {{ tx.net_amount }} USD ({{ tx.mxn_amount }} MXN)
         {% if tx.capital_gain_mxn is not None %}
-          — <strong>Gain: {{ tx.capital_gain_mxn }} MXN</strong>
+          — <strong>
+            Gain:
+            {% if tx.capital_gain_mxn >= 0 %}
+              <strong style="color: green;">+${{ tx.capital_gain_mxn }} MXN</strong>
+            {% else %}
+              <strong style="color: red;">-${{ tx.capital_gain_mxn|floatformat:2|slice:"1:" }} MXN</strong>
+            {% endif %}
+          </strong>
         {% else %}
           — <em>Gain not calculated</em>
         {% endif %}
       </li>
     {% endfor %}
   </ul>
-  <p><strong>Total Sold: {{ actions.Sell|length }} transactions</strong></p>
+  <p><strong>Total Sold: {{ grouped_transactions.2025.Sell|sum_sold }} MXN ({{ actions.Sell|length }} transactions)</strong></p>
   <p><strong>Total Capital Gains: {{ actions.Sell|sum_gain }} MXN</strong></p>
 {% endfor %}
